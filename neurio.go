@@ -14,7 +14,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"semaphore"
+	"github.com/chmorgan/semaphore"
 	"time"
 )
 
