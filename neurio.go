@@ -77,6 +77,16 @@ type CurrentSampleResponse struct {
 	CTs       []CT      `json:"cts"`
 }
 
+func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
+	for _, channel := range c.Channels {
+		if channel.ChannelType == channelType {
+			return &channel
+		}
+	}
+
+	return nil
+}
+
 /*
  Assumes that the samples are ordered from newest to oldest, with the newest one first
  Using the first sample, locate the sample closest to the duration and
