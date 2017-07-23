@@ -89,14 +89,12 @@ func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
 
 /*
  Assumes that the samples are ordered from newest to oldest, with the newest one first
- Using the first sample, locate the sample closest to the duration and
- return the delta betwen the two samples and the duration between the two samples
+ Using the first sample, locate and return the sample closest to the duration and
+ the duration between the initial sample and the nearest sample.
 
- If there are less than 2 samples then return (nil, nil), we can't calculate a delta
- from a single sample.
-
+ If there are less than 2 samples then return (nil, nil), there is no nearest sample.
 */
-func CalculateDeltaForDuration(durationString string, samples []CurrentSampleResponse, logger log.Logger) (delta CurrentSampleResponse, actualDuration time.Duration, err error) {
+func FindNearestSampleForDuration(durationString string, samples []CurrentSampleResponse, logger log.Logger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
 	duration, err := time.ParseDuration(durationString)
 
 	if len(samples) < 2 {
@@ -106,7 +104,6 @@ func CalculateDeltaForDuration(durationString string, samples []CurrentSampleRes
 
 	if err != nil {
 		level.Error(logger).Log("err", err)
-		return
 	}
 
 	initialSample := samples[0]
@@ -114,7 +111,7 @@ func CalculateDeltaForDuration(durationString string, samples []CurrentSampleRes
 	// NOTE: We always start with the nearestSample as the next sample to ensure
 	// that we are calculating a delta between two different samples and not
 	// the same one
-	nearestSample := samples[1]
+	nearestSample = samples[1]
 	actualDuration = initialSample.Timestamp.Sub(nearestSample.Timestamp)
 
 	// find the sample closest to the duration
@@ -141,20 +138,25 @@ func CalculateDeltaForDuration(durationString string, samples []CurrentSampleRes
 
 	level.Info(logger).Log("nearestSample.Timestamp", nearestSample.Timestamp, "actualDuration", actualDuration)
 
-	deltaSample := deltaSample(initialSample, nearestSample, logger)
-
-	return deltaSample, actualDuration, nil
+	return nearestSample, actualDuration, nil
 }
 
-func ExportedWattsPerSecondForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger log.Logger) (exportedRate float64) {
+/**
+ * Calculate the exported watts on a given channel, this is
+ * the exported watt seconds less the imported watt seconds divided by a number
+ * of seconds to convert back to watts.
+ */
+func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger log.Logger) (exportedWatts float64) {
+	level.Info(logger).Log("duration.Seconds()", duration.Seconds())
+
 	for index, channel := range deltaSample.Channels {
 		fmt.Printf("%d %s %d import: %d export: %d\n", index, channel.ChannelType, channel.Ch, channel.EImp_Ws, channel.EExp_Ws)
 
 		if channel.ChannelType == channelName {
-			exported := channel.EExp_Ws - channel.EImp_Ws
-			level.Info(logger).Log("exported", exported, "seconds", duration.Seconds())
-			exportedRate = float64(exported) / duration.Seconds()
-			level.Info(logger).Log("exported rate watts", exportedRate)
+			exportedWattSeconds := channel.EExp_Ws - channel.EImp_Ws
+			level.Debug(logger).Log("exported_ws", exportedWattSeconds, "seconds", duration.Seconds())
+			exportedWatts = float64(exportedWattSeconds) / duration.Seconds()
+			level.Debug(logger).Log("exported watts", exportedWatts)
 		}
 	}
 
