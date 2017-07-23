@@ -18,6 +18,17 @@ import (
 	"time"
 )
 
+
+/* NOTES:
+ * - Occasionally the Neurio will return what appears to be a misaligned
+ *   value for a given sample. This may be seen as a Exxx_Ws value that has
+ *   changed roughly 2x what you might expect from a sample 1 second ago.
+ *
+ *   As a consequence, for deltas between samples 1 second apart, please use
+ *  the instantanious values such as P_W rather than calculating using delta-Ws
+ */
+
+
 /*
 
 Example json payload from http://xxx/current-sample/
