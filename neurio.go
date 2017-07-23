@@ -162,7 +162,7 @@ func ExportedWattsPerSecondForChannel(channelName string, duration time.Duration
 }
 
 /* returns (a - b) */
-func deltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Logger) CurrentSampleResponse {
+func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Logger) CurrentSampleResponse {
 	var response CurrentSampleResponse
 
 	response.SensorId = "0"
