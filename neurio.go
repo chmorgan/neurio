@@ -9,15 +9,15 @@ package neurio
 import (
 	"errors"
 	"fmt"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"github.com/chmorgan/semaphore"
 	"time"
-)
 
+	"github.com/chmorgan/semaphore"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+)
 
 /* NOTES:
  * - Occasionally the Neurio will return what appears to be a misaligned
@@ -27,7 +27,6 @@ import (
  *   As a consequence, for deltas between samples 1 second apart, please use
  *  the instantanious values such as P_W rather than calculating using delta-Ws
  */
-
 
 /*
 
@@ -147,10 +146,13 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
  * of seconds to convert back to watts.
  */
 func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger log.Logger) (exportedWatts float64) {
-	level.Info(logger).Log("duration.Seconds()", duration.Seconds())
+	level.Debug(logger).Log("duration.Seconds()", duration.Seconds())
 
 	for index, channel := range deltaSample.Channels {
-		fmt.Printf("%d %s %d import: %d export: %d\n", index, channel.ChannelType, channel.Ch, channel.EImp_Ws, channel.EExp_Ws)
+		level.Debug(logger).Log("index", index, "ChannelType", channel.ChannelType,
+			"Channel", channel.Ch,
+			"EImp_Ws", channel.EImp_Ws,
+			"EExp_Ws", channel.EExp_Ws)
 
 		if channel.ChannelType == channelName {
 			exportedWattSeconds := channel.EExp_Ws - channel.EImp_Ws
