@@ -9,10 +9,11 @@ package neurio
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"os"
 	"testing"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 func TestCalculateDelta(t *testing.T) {
@@ -54,10 +55,13 @@ func TestCalculateDelta(t *testing.T) {
 		t.Errorf("expected len(samples) of %d but was %d\n", expectedSampleLength, len(samples))
 	}
 
-	fmt.Println(samples[0])
-	fmt.Println(samples[1])
+	fmt.Printf("samples[0]:\n%+v\n", samples[0])
+	fmt.Printf("samples[1]:\n%+v\n", samples[1])
 
-	delta, actualDuration, err := CalculateDeltaForDuration("5s", samples, logger)
+	nearestSample, actualDuration, err := FindNearestSampleForDuration("5s", samples, logger)
+
+	// NOTE: samples[0] is the newest sample
+	delta := DeltaSample(samples[0], nearestSample, logger)
 
 	deltaString := fmt.Sprintf("%#v", delta)
 	level.Info(logger).Log("delta", deltaString, "actualDuration", actualDuration)
@@ -65,10 +69,12 @@ func TestCalculateDelta(t *testing.T) {
 	expected_EImp_Ws := int64(200)
 	if delta.Channels[0].EImp_Ws != expected_EImp_Ws {
 		t.Errorf("Expected EImp_Ws to be %d but is %d\n", expected_EImp_Ws, delta.Channels[0].EImp_Ws)
+		fmt.Printf("delta:\n%+v\n", delta)
 	}
 
 	expected_EExp_Ws := int64(100)
 	if delta.Channels[0].EExp_Ws != expected_EExp_Ws {
 		t.Errorf("Expected EExp_Ws to be %d but is %d\n", expected_EExp_Ws, delta.Channels[0].EExp_Ws)
+		fmt.Printf("%+v", delta)
 	}
 }
