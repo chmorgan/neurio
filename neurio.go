@@ -76,6 +76,7 @@ type CurrentSampleResponse struct {
 	CTs       []CT      `json:"cts"`
 }
 
+// FindChannelByType returns the Channel matching channelType in CurrentSampleResponse
 func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
 	for _, channel := range c.Channels {
 		if channel.ChannelType == channelType {
@@ -86,13 +87,14 @@ func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
 	return nil
 }
 
-/*
- Assumes that the samples are ordered from newest to oldest, with the newest one first
- Using the first sample, locate and return the sample closest to the duration and
- the duration between the initial sample and the nearest sample.
-
- If there are less than 2 samples then return (nil, nil), there is no nearest sample.
-*/
+// FindNearestSampleForDuration searches samples to find the nearest one
+// from the first one to the given durationString
+//
+// Assumes that the samples are ordered from newest to oldest, with the newest one first
+// Using the first sample, locate and return the sample closest to the duration and
+// the duration between the initial sample and the nearest sample.
+//
+// If there are less than 2 samples then return (nil, nil), there is no nearest sample.
 func FindNearestSampleForDuration(durationString string, samples []CurrentSampleResponse, logger log.Logger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
 	duration, err := time.ParseDuration(durationString)
 
@@ -165,7 +167,7 @@ func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSa
 	return
 }
 
-/* returns (a - b) */
+// DeltaSample returns (a - b)
 func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Logger) CurrentSampleResponse {
 	var response CurrentSampleResponse
 
