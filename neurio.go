@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* Copyright 2017 Chris Morgan <chmorgan@gmail.com> */
+/* Copyright 2017-2018 Chris Morgan <chmorgan@gmail.com> */
 
 package neurio
 
@@ -210,18 +210,28 @@ func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Lo
 	return response
 }
 
-/**
- * Search local IPv4 addresses for Nerio devices
- */
+// Discover searches all local IPv4 network interfaces for Neurio devices
 func Discover(logger log.Logger) (devices []string) {
-	ip, err := externalIP()
+	ips, err := externalIPs()
 	if err != nil {
 		level.Error(logger).Log("error", err)
 	}
-	level.Debug(logger).Log("localipaddress", ip)
+
+	for _, element := range ips {
+		level.Info(logger).Log("element", element)
+		foundDevices := DiscoverIP(logger, element)
+		devices = append(devices, foundDevices...)
+	}
+
+	return
+}
+
+// DiscoverIP searches an IPv4 interface for Neurio devices
+func DiscoverIP(logger log.Logger, interfaceIP net.IP) (devices []string) {
+	level.Debug(logger).Log("localipaddress", interfaceIP)
 
 	// drop the last byte of the ip address
-	subIP := ip[:len(ip)-1]
+	subIP := interfaceIP[:len(interfaceIP)-1]
 
 	count := 255
 
@@ -302,13 +312,16 @@ func getURL(url string, logger log.Logger) (success bool, responseBody string) {
 	return
 }
 
-/* Return the ip address or an error
+/* Return the ip addresses or an error
    Only support IPv4 */
-func externalIP() (net.IP, error) {
+func externalIPs() ([]net.IP, error) {
+	var ips []net.IP
 	ifaces, err := net.Interfaces()
+
 	if err != nil {
 		return nil, err
 	}
+
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 {
 			continue // interface down
@@ -338,9 +351,13 @@ func externalIP() (net.IP, error) {
 				continue // not an ipv4 address
 			}
 
-			return ip, nil
+			ips = append(ips, ip)
 		}
 	}
 
-	return nil, errors.New("are you connected to the network?")
+	if len(ips) != 0 {
+		return ips, nil
+	} else {
+		return nil, errors.New("are you connected to the network?")
+	}
 }
