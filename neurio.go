@@ -219,7 +219,7 @@ func Discover(logger log.Logger) (devices []string) {
 	level.Debug(logger).Log("localipaddress", ip)
 
 	// drop the last byte of the ip address
-	subIp := ip[:len(ip)-1]
+	subIP := ip[:len(ip)-1]
 
 	count := 255
 
@@ -236,7 +236,7 @@ func Discover(logger log.Logger) (devices []string) {
 	// dispatch the ip addresses to check to the channel
 	// that the workers are listening on
 	for i := 1; i <= count; i++ {
-		ip := append(subIp, byte(i))
+		ip := append(subIP, byte(i))
 		level.Debug(logger).Log("ip", ip.String())
 		newSlice := make([]byte, len(ip))
 		copy(newSlice, ip)
@@ -263,7 +263,7 @@ func worker(logger log.Logger, id int, jobs <-chan net.IP, results chan<- net.IP
 		level.Debug(logger).Log("id", id, "ip", ip)
 
 		url := fmt.Sprintf("http://%s/current-sample", ip)
-		success, _ := getUrl(url, logger)
+		success, _ := getURL(url, logger)
 		if success == true {
 			results <- ip
 		}
@@ -274,7 +274,7 @@ func worker(logger log.Logger, id int, jobs <-chan net.IP, results chan<- net.IP
 	level.Debug(logger).Log("id", id, "status", "shutting_down")
 }
 
-func getUrl(url string, logger log.Logger) (success bool, responseBody string) {
+func getURL(url string, logger log.Logger) (success bool, responseBody string) {
 	var netClient = &http.Client{
 		Timeout: time.Millisecond * 500,
 	}
@@ -287,8 +287,8 @@ func getUrl(url string, logger log.Logger) (success bool, responseBody string) {
 		success = false
 	} else {
 		defer response.Body.Close()
-		response_body, _ := ioutil.ReadAll(response.Body)
-		responseBody = string(response_body)
+		responseBodyBytes, _ := ioutil.ReadAll(response.Body)
+		responseBody = string(responseBodyBytes)
 
 		if response.StatusCode == 200 {
 			success = true
