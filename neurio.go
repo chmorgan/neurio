@@ -50,6 +50,7 @@ Example json payload from http://xxx/current-sample/
 
 */
 
+// Channel contains each of the physical input channels reported by the Neurio
 type Channel struct {
 	ChannelType string  `json:"type"`
 	Ch          int     `json:"ch"`
@@ -60,6 +61,7 @@ type Channel struct {
 	V_V         float64 `json:"v_V"`
 }
 
+// CT reports the current transformer data
 type CT struct {
 	CT    int     `json:"ct"`
 	P_W   int     `json:"p_W"`
@@ -67,7 +69,7 @@ type CT struct {
 	V_V   float64 `json:"v_V"`
 }
 
-/* See https://mholt.github.io/json-to-go/ for help */
+// CurrentSampleResponse is the top level container for a data sample returned by the Neurio
 type CurrentSampleResponse struct {
 	SensorId  string    `json:"sensorId"`
 	Timestamp time.Time `json:"timestamp"`
@@ -141,11 +143,9 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
 	return nearestSample, actualDuration, nil
 }
 
-/**
- * Calculate the exported watts on a given channel, this is
- * the exported watt seconds less the imported watt seconds divided by a number
- * of seconds to convert back to watts.
- */
+// ExportedWattsForChannel calculates the exported watts on a given channel, this is
+// the exported watt seconds less the imported watt seconds divided by a number
+// of seconds to convert back to watts.
 func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger *zap.SugaredLogger) (exportedWatts float64) {
 	logger.Debug("duration.Seconds()", duration.Seconds())
 
