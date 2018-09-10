@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"time"
@@ -86,6 +87,64 @@ func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
 	}
 
 	return nil
+}
+
+// FindCTByID tries to find a CT entry by its id
+func (c *CurrentSampleResponse) FindCTByID(id int) *CT {
+	for _, ct := range c.CTs {
+		if ct.CT == id {
+			return &ct
+		}
+	}
+
+	return nil
+}
+
+// CompareValues returns true if two samples have values within epsilon of each other
+func (c *CurrentSampleResponse) CompareValues(a *CurrentSampleResponse, epsilon float64) bool {
+	for _, cChannel := range c.Channels {
+		aChannel := a.FindChannelByType(cChannel.ChannelType)
+
+		if aChannel == nil {
+			return false
+		}
+
+		if cChannel.EExp_Ws != aChannel.EExp_Ws {
+			return false
+		}
+
+		if cChannel.EImp_Ws != aChannel.EImp_Ws {
+			return false
+		}
+
+		if cChannel.P_W != aChannel.P_W {
+			return false
+		}
+
+		if cChannel.Q_VAR != aChannel.Q_VAR {
+			return false
+		}
+
+		if math.Abs(cChannel.V_V-aChannel.V_V) > epsilon {
+			return false
+		}
+	}
+
+	for _, cCT := range c.CTs {
+		aCT := a.FindCTByID(cCT.CT)
+
+		if aCT == nil {
+			return false
+		}
+
+		if (cCT.P_W != aCT.P_W) ||
+			(cCT.Q_VAR != aCT.Q_VAR) ||
+			(cCT.V_V != aCT.V_V) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // FindNearestSampleForDuration searches samples to find the nearest one

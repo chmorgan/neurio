@@ -73,3 +73,25 @@ func TestCalculateDelta(t *testing.T) {
 		fmt.Printf("%+v", delta)
 	}
 }
+
+func TestCompareValues(t *testing.T) {
+	sample1 := &CurrentSampleResponse{}
+	err := json.Unmarshal([]byte(testJSON), sample1)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	sample2 := &CurrentSampleResponse{}
+	err = json.Unmarshal([]byte(testJSON2), sample2)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	if sample1.CompareValues(sample1, 0.1) != true {
+		t.Errorf("expected the samples to match but they did not\n")
+	}
+
+	if sample1.CompareValues(sample2, 0.1) != false {
+		t.Errorf("expected the samples not to match but they did\n")
+	}
+}
