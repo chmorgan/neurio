@@ -9,18 +9,13 @@ package neurio
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"go.uber.org/zap"
 )
 
 func TestCalculateDelta(t *testing.T) {
-	var logger log.Logger
-	logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
-	logger = level.NewFilter(logger, level.AllowWarn())
-	logger = log.With(logger, "ts", log.DefaultTimestampUTC, "c", log.DefaultCaller)
+	logger := zap.NewExample().Sugar()
 
 	samples := make([]CurrentSampleResponse, 0)
 
@@ -64,7 +59,7 @@ func TestCalculateDelta(t *testing.T) {
 	delta := DeltaSample(samples[0], nearestSample, logger)
 
 	deltaString := fmt.Sprintf("%#v", delta)
-	level.Info(logger).Log("delta", deltaString, "actualDuration", actualDuration)
+	logger.Infow("delta entry", "delta", deltaString, "actualDuration", actualDuration)
 
 	expected_EImp_Ws := int64(200)
 	if delta.Channels[0].EImp_Ws != expected_EImp_Ws {

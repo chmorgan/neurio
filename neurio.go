@@ -15,8 +15,7 @@ import (
 	"time"
 
 	"github.com/chmorgan/semaphore"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"go.uber.org/zap"
 )
 
 /* NOTES:
@@ -95,7 +94,7 @@ func (c *CurrentSampleResponse) FindChannelByType(channelType string) *Channel {
 // the duration between the initial sample and the nearest sample.
 //
 // If there are less than 2 samples then return (nil, nil), there is no nearest sample.
-func FindNearestSampleForDuration(durationString string, samples []CurrentSampleResponse, logger log.Logger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
+func FindNearestSampleForDuration(durationString string, samples []CurrentSampleResponse, logger *zap.SugaredLogger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
 	duration, err := time.ParseDuration(durationString)
 
 	if len(samples) < 2 {
@@ -104,7 +103,7 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
 	}
 
 	if err != nil {
-		level.Error(logger).Log("err", err)
+		logger.Errorw("FindNearestSampleForDuration", "err", err)
 	}
 
 	initialSample := samples[0]
@@ -117,10 +116,10 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
 
 	// find the sample closest to the duration
 	for _, sample := range samples {
-		level.Debug(logger).Log("actualDuration", actualDuration)
+		logger.Debugw("FindNearestSampleForDuration", "actualDuration", actualDuration)
 
 		sampleDuration := initialSample.Timestamp.Sub(sample.Timestamp)
-		level.Debug(logger).Log("sampleDuration", sampleDuration)
+		logger.Debugw("FindNearestSampleForDuration", "sampleDuration", sampleDuration)
 
 		// if we are still less than our desired duration
 		if sampleDuration <= duration {
@@ -137,7 +136,7 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
 		}
 	}
 
-	level.Info(logger).Log("nearestSample.Timestamp", nearestSample.Timestamp, "actualDuration", actualDuration)
+	logger.Infow("FindNearestSampleForDuration", "nearestSample.Timestamp", nearestSample.Timestamp, "actualDuration", actualDuration)
 
 	return nearestSample, actualDuration, nil
 }
@@ -147,20 +146,20 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
  * the exported watt seconds less the imported watt seconds divided by a number
  * of seconds to convert back to watts.
  */
-func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger log.Logger) (exportedWatts float64) {
-	level.Debug(logger).Log("duration.Seconds()", duration.Seconds())
+func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSample CurrentSampleResponse, logger *zap.SugaredLogger) (exportedWatts float64) {
+	logger.Debug("duration.Seconds()", duration.Seconds())
 
 	for index, channel := range deltaSample.Channels {
-		level.Debug(logger).Log("index", index, "ChannelType", channel.ChannelType,
+		logger.Debugw("ExportedWattsForChannel", "index", index, "ChannelType", channel.ChannelType,
 			"Channel", channel.Ch,
 			"EImp_Ws", channel.EImp_Ws,
 			"EExp_Ws", channel.EExp_Ws)
 
 		if channel.ChannelType == channelName {
 			exportedWattSeconds := channel.EExp_Ws - channel.EImp_Ws
-			level.Debug(logger).Log("exported_ws", exportedWattSeconds, "seconds", duration.Seconds())
+			logger.Debugw("ExportedWattsForChannel", "exported_ws", exportedWattSeconds, "seconds", duration.Seconds())
 			exportedWatts = float64(exportedWattSeconds) / duration.Seconds()
-			level.Debug(logger).Log("exported watts", exportedWatts)
+			logger.Debugw("ExportedWattsForChannel", "exported watts", exportedWatts)
 		}
 	}
 
@@ -168,7 +167,7 @@ func ExportedWattsForChannel(channelName string, duration time.Duration, deltaSa
 }
 
 // DeltaSample returns (a - b)
-func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Logger) CurrentSampleResponse {
+func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger *zap.SugaredLogger) CurrentSampleResponse {
 	var response CurrentSampleResponse
 
 	response.SensorId = "0"
@@ -211,14 +210,14 @@ func DeltaSample(a CurrentSampleResponse, b CurrentSampleResponse, logger log.Lo
 }
 
 // Discover searches all local IPv4 network interfaces for Neurio devices
-func Discover(logger log.Logger) (devices []string) {
+func Discover(logger *zap.SugaredLogger) (devices []string) {
 	ips, err := externalIPs()
 	if err != nil {
-		level.Error(logger).Log("error", err)
+		logger.Errorw("Discover", "error", err)
 	}
 
 	for _, element := range ips {
-		level.Info(logger).Log("element", element)
+		logger.Infow("Discover", "element", element)
 		foundDevices := DiscoverIP(logger, element)
 		devices = append(devices, foundDevices...)
 	}
@@ -227,8 +226,8 @@ func Discover(logger log.Logger) (devices []string) {
 }
 
 // DiscoverIP searches an IPv4 interface for Neurio devices
-func DiscoverIP(logger log.Logger, interfaceIP net.IP) (devices []string) {
-	level.Debug(logger).Log("localipaddress", interfaceIP)
+func DiscoverIP(logger *zap.SugaredLogger, interfaceIP net.IP) (devices []string) {
+	logger.Debugw("DiscoverIP", "localipaddress", interfaceIP)
 
 	// drop the last byte of the ip address
 	subIP := interfaceIP[:len(interfaceIP)-1]
@@ -249,7 +248,7 @@ func DiscoverIP(logger log.Logger, interfaceIP net.IP) (devices []string) {
 	// that the workers are listening on
 	for i := 1; i <= count; i++ {
 		ip := append(subIP, byte(i))
-		level.Debug(logger).Log("ip", ip.String())
+		logger.Debugw("DiscoverIP", "ip", ip.String())
 		newSlice := make([]byte, len(ip))
 		copy(newSlice, ip)
 		jobs <- newSlice
@@ -264,15 +263,15 @@ func DiscoverIP(logger log.Logger, interfaceIP net.IP) (devices []string) {
 	case foundIP := <-results:
 		devices = append(devices, foundIP.String())
 	default:
-		level.Info(logger).Log("zero", "devices")
+		logger.Infow("DiscoverIP", "zero", "devices")
 	}
 
 	return
 }
 
-func worker(logger log.Logger, id int, jobs <-chan net.IP, results chan<- net.IP, sem semaphore.Semaphore) {
+func worker(logger *zap.SugaredLogger, id int, jobs <-chan net.IP, results chan<- net.IP, sem semaphore.Semaphore) {
 	for ip := range jobs {
-		level.Debug(logger).Log("id", id, "ip", ip)
+		logger.Debugw("worker", "id", id, "ip", ip)
 
 		url := fmt.Sprintf("http://%s/current-sample", ip)
 		success, _ := getURL(url, logger)
@@ -283,19 +282,19 @@ func worker(logger log.Logger, id int, jobs <-chan net.IP, results chan<- net.IP
 		sem.Signal()
 	}
 
-	level.Debug(logger).Log("id", id, "status", "shutting_down")
+	logger.Debugw("worker", "id", id, "status", "shutting_down")
 }
 
-func getURL(url string, logger log.Logger) (success bool, responseBody string) {
+func getURL(url string, logger *zap.SugaredLogger) (success bool, responseBody string) {
 	var netClient = &http.Client{
 		Timeout: time.Millisecond * 500,
 	}
 
-	level.Debug(logger).Log("url", url)
+	logger.Debugw("getURL", "url", url)
 
 	response, err := netClient.Get(url)
 	if err != nil {
-		level.Debug(logger).Log("error", err)
+		logger.Debugw("getURL", "error", err)
 		success = false
 	} else {
 		defer response.Body.Close()
