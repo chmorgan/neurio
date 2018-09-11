@@ -155,8 +155,8 @@ func (c *CurrentSampleResponse) CompareValues(a *CurrentSampleResponse, epsilon 
 // the duration between the initial sample and the nearest sample.
 //
 // If there are less than 2 samples then return (nil, nil), there is no nearest sample.
-func FindNearestSampleForDuration(durationString string, samples []CurrentSampleResponse, logger *zap.SugaredLogger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
-	duration, err := time.ParseDuration(durationString)
+func FindNearestSampleForDuration(desiredDuration string, samples []CurrentSampleResponse, logger *zap.SugaredLogger) (nearestSample CurrentSampleResponse, actualDuration time.Duration, err error) {
+	duration, err := time.ParseDuration(desiredDuration)
 
 	if len(samples) < 2 {
 		err = errors.New("not enough samples")
@@ -197,7 +197,7 @@ func FindNearestSampleForDuration(durationString string, samples []CurrentSample
 		}
 	}
 
-	logger.Infow("FindNearestSampleForDuration", "nearestSample.Timestamp", nearestSample.Timestamp, "actualDuration", actualDuration)
+	logger.Debugw("FindNearestSampleForDuration", "nearestSample.Timestamp", nearestSample.Timestamp, "desiredDuration", duration, "actualDuration", actualDuration)
 
 	return nearestSample, actualDuration, nil
 }
