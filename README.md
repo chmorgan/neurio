@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/chmorgan/neurio)](https://goreportcard.com/report/github.com/chmorgan/neurio)
+
 # neurio
 
 Go library for discovering and processing data from Neurio devices.
