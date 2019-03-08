@@ -346,7 +346,7 @@ func worker(logger *zap.SugaredLogger, id int, jobs <-chan net.IP, results chan<
 
 func getURL(url string, logger *zap.SugaredLogger) (success bool, responseBody string) {
 	var netClient = &http.Client{
-		Timeout: time.Millisecond * 500,
+		Timeout: time.Millisecond * 750,
 	}
 
 	logger.Debugw("getURL", "url", url)
