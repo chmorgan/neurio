@@ -317,13 +317,15 @@ func DiscoverIP(logger *zap.SugaredLogger, interfaceIP net.IP) (devices []string
 
 	sem.Wait(count)
 
-	// build the result slice
-	select {
-	case foundIP := <-results:
-		devices = append(devices, foundIP.String())
-	default:
-		logger.Infow("DiscoverIP", "zero", "devices")
-	}
+	close(results)
+
+	for foundIP := range results {
+                devices = append(devices, foundIP.String())
+        }
+
+        if len(devices) == 0 {
+                logger.Infow("DiscoverIP", "zero", "devices")
+        }
 
 	return
 }
