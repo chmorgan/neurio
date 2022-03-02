@@ -335,6 +335,7 @@ func worker(logger *zap.SugaredLogger, id int, jobs <-chan net.IP, results chan<
 		url := fmt.Sprintf("http://%s/current-sample", ip)
 		success, _ := getURL(url, logger)
 		if success == true {
+			logger.Debugw("worker", "id", id, "ip", ip, "found", "neurio")
 			results <- ip
 		}
 
